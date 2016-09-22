@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="all.css"/>
+</head>
+<body>
+<button class="btn">成功msg</button>
+<button class="btn">失败msg</button>
+<button class="btn" style="background-color: #1a9bd2;color: #fff">倒计时</button>
+<button class="btn">btn-msg</button>
+
+<!--分页-->
+<div id="content" style="margin-top: 20px"></div>
+<div id="pages"></div>
+</body>
+<script src="jquery.min.js"></script>
+<!--<script type="text/javascript" src="//cdn.bootcss.com/jquery/1.8.3/jquery.js"></script>-->
+<script src="all.js"></script>
+<script>
+
+    var btn = document.getElementsByClassName('btn');
+
+    // 成功消息框
+    btn[0].onclick = function(){
+        msg(true,'成功');
+    };
+    // 失败消息框
+    btn[1].onclick = function(){
+        msg(false,'失败');
+    };
+
+    // 倒计时按钮
+    btn[2].onclick = function () {
+        var self = this;
+        BtnWaitTime(self,5,function() {
+            alert('倒计时结束')
+        })
+    };
+
+    // 带按钮消息框
+    btn[3].onclick = function () {
+        btnMsg_Show('带按钮的modal',function() {
+            alert('你点击了确定');
+            btnMsg_close(); // 关闭摸态框
+        })
+    };
+
+    //加载第一页
+    var cyValue = 1;
+    var jsonData = {
+        "total" : 10,
+        "size" : 10,
+        "data": "当前是第"+cyValue+"页"
+    };
+    document.getElementById('content').innerHTML = jsonData.data;
+
+    // 分页
+    pages(jsonData.total,function(currentPage){
+        cyValue = currentPage;
+        var jsonData = {
+            "total" : 10,
+            "size" : 10,
+            "data": "当前是第"+cyValue+"页"
+        };
+        document.getElementById('content').innerHTML = jsonData.data;
+    });
+</script>
+</html>

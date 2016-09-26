@@ -1,0 +1,252 @@
+<html>
+<head>
+    <title>DEMO</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/settle.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery.Jcrop.css">
+
+    <style>
+
+        #editImg-mask {
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.3);
+            display: none;
+            z-index: 99999;
+        }
+
+        .editImg-content {
+            text-align: center;
+            padding: 20px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 600px;
+            min-height: 400px;
+            background-color: #fff;
+        }
+
+        .cut-img button {
+            margin: 20px 20px;
+
+            width: 60px;
+            height: 34px;
+        }
+
+    </style>
+</head>
+<body>
+<!--<button id="addImg">addImg</button>-->
+<div style="height: 300px">
+    <p class="upLoad tip">
+    <span class="round">+</span>
+    <span class="upText">上传图片</span>
+    <input type="file" class="tip choose addImg">
+    </p>
+</div>
+<div style="height: 300px">
+    <p class="upLoad tip ">
+        <span class="round">+</span>
+        <span class="upText">上传图片</span>
+        <input type="file" class="tip choose addImg">
+    </p>
+</div>
+<div style="height: 300px">
+    <p class="upLoad tip ">
+        <span class="round">+</span>
+        <span class="upText">上传图片</span>
+        <input type="file" class="tip choose addImg">
+    </p>
+</div>
+
+<div id="editImg-mask">
+    <div class="editImg-content">
+        <!--<input style="text-align: center" type="file" name="file" id="post_file">-->
+        <div id="label" style="overflow: hidden;margin: 0 auto">
+            <!--<img id="get_image">-->
+        </div>
+        <canvas id="edit_pic" style="display: none;"></canvas>
+        <div class="cut-img">
+            <button id="edit" style="display: none">剪裁</button>
+            <button id="cancel-img">取消</button>
+        </div>
+    </div>
+</div>
+
+<p id="show_edit"></p>
+<script src="js/jquery.min.js"></script>
+<script src="js/jquery.Jcrop.js"></script>
+<script type="text/javascript">
+
+    var postFile = {
+        init: function() {
+            var t = this;
+            t.editPic = document.getElementById('edit_pic');
+        },
+        handleFiles: function() {
+            $('#editImg-mask').show();
+
+            var Cindex = $('.cha_img').index(this);
+            var Aindex = $('.choose').index(this);
+            var jcropApi;
+            var b;
+            var t = this;
+            var fileList = this.files[0];
+
+            $('#cancel-img').click(function () {
+                if (Aindex != -1) {
+                    document.getElementsByClassName('choose')[Aindex].value = '';
+                    console.log(document.getElementsByClassName('choose')[Aindex].value)
+                }
+
+                if (Cindex != -1) {
+                    document.getElementsByClassName('cha_img')[Cindex].value = '';
+                }
+
+                $('#editImg-mask').hide();
+            });
+
+
+            ImageFileResize(fileList,500,500,function (dataUrl,CW,CH) {
+                $('#label').width(CW+'px');
+                var html = '<img id="get_image" width='+CW+' height='+CH+'>';
+                $('#label').html(html);
+
+                var img = document.getElementById('get_image');
+                img.src = dataUrl;
+                t.imgUrl = dataUrl;
+
+                // 事件处理
+
+                $("#get_image").Jcrop({
+                    aspectRatio:4/3,
+                    onChange:showCoords, //当选择区域变化的时候，执行对应的回调函数
+                    onSelect:showCoords, //当选中区域的时候，执行对应的回调函数
+                    setSelect: []
+                },function () {
+                    jcropApi = this
+                });
+
+
+
+                function showCoords(c) {
+                    $("#x").val(c.x); //得到选中区域左上角横坐标
+                    $("#y").val(c.y); //得到选中区域左上角纵坐标
+                    $("#w").val(c.w); //得到选中区域的宽度
+                    $("#h").val(c.h); //得到选中区域的高度
+                    b = c;
+                }
+            });
+
+
+            $('#edit').show();
+
+            $('#edit').unbind();
+            $('#edit').click(function () {
+                postFile.cutImage(t.imgUrl,b,Cindex,Aindex);
+                $('#editImg-mask').hide();
+                $('#edit').hide();
+            })
+        },
+
+        cutImage: function(url,b,Cindex,Aindex) {
+            console.log(Cindex);
+            var t = this;
+            var ctx = t.editPic.getContext('2d');
+            var images = new Image();
+            images.src = url;
+            images.onload = function(){
+                t.editPic.width = 400;
+                t.editPic.height = 300;
+                ctx.drawImage(images,b.x, b.y, b.w, b.h, 0, 0, 400, 300); //裁剪图片
+
+                if (Cindex == -1) {
+                    var html = '<p class="imgBox" style="background: #fff url('+t.editPic.toDataURL()+') no-repeat center;background-size: contain;">'+
+                            '<span>修改<input type="file" class="cha_img"></span><span class="del_img">删除</span>'+
+                            '</p>';
+
+                    $('.upLoad').eq(Aindex).before(html)
+                } else {
+                    $(".imgBox").eq(Cindex).css("background-image","url("+t.editPic.toDataURL()+")");
+                }
+
+                $('.cha_img').unbind('click');
+                $('.del_img').unbind('click');
+                $('.cha_img').change(postFile.handleFiles);
+
+                $('.del_img').click(function(){
+                    var dn = $('.del_img').index(this);
+                    $('.imgBox').eq(dn).remove();
+
+                    $('.upPic').each(function() {
+                        if ($(this).find('.imgBox').length < 2) {
+                            $(this).find('.upLoad').css('display', 'inline-block');
+                        }
+                    })
+                });
+
+
+                if (Aindex != -1) {
+                    document.getElementsByClassName('choose')[Aindex].value = '';
+                    console.log(document.getElementsByClassName('choose')[Aindex].value)
+                }
+
+                if (Cindex != -1) {
+                    document.getElementsByClassName('cha_img')[Cindex].value = '';
+                }
+
+                if($('.upPic:eq('+Aindex+') .imgBox').length==2){
+                    $('.upPic:eq('+Aindex+') .upLoad').css('display','none');
+                }
+
+            }
+        }
+    };
+
+    postFile.init();
+
+    function ImageFileResize(file, maxWidth, maxHeight, callback) {
+        var Img = new Image;
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        Img.onload = function() {
+            if (Img.width>maxWidth || Img.height>maxHeight) {
+                var bili = Math.max(Img.width/maxWidth, Img.height/maxHeight);
+                canvas.width = Img.width/bili;
+                canvas.height = Img.height/bili;
+            }else{
+                canvas.width = Img.width;
+                canvas.height = Img.height;
+            }
+            ctx.drawImage(Img, 0, 0, Img.width, Img.height, 0, 0, canvas.width, canvas.height);
+            var imgDataUrl = canvas.toDataURL('image/jpeg');
+
+            callback(imgDataUrl,canvas.width,canvas.height);
+        };
+        try{
+            Img.src = window.URL.createObjectURL(file);
+        }catch(err){
+            try{
+                Img.src = window.webkitURL.createObjectURL(file);
+            }catch(err){
+                //alert(err.message);
+            }
+        }
+    }
+
+    $('.choose').change(postFile.handleFiles);
+
+
+
+
+
+</script>
+</body>
+</html>
